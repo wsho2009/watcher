@@ -1,0 +1,11 @@
+java -classpath .;D:\pleiades\2022-06\jar\ojdbc11.jar\* DBChangeNotification
+java watchTest
+
+javac -classpath D:¥poi-bin-5.2.3¥*;D:¥poi-bin-5.2.3¥lib¥*;D:¥poi-bin-5.2.3¥ooxml-lib¥* poiTest.java
+java -classpath .;D:¥poi-bin-5.2.3¥*;D:¥poi-bin-5.2.3¥lib¥*;D:¥poi-bin-5.2.3¥ooxml-lib¥* poiTest
+
+必要外部JAR
+ojdbc11.jar
+apache-log4j-2.19.0-bin.zip
+poi-bin-5.2.3-20220909.zip
+
