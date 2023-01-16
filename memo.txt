@@ -9,3 +9,5 @@ ojdbc11.jar
 apache-log4j-2.19.0-bin.zip
 poi-bin-5.2.3-20220909.zip
 
+javac -encoding UTF-8 TimerTest.java 
+java TimerTest
