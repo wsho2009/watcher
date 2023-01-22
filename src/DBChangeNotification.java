@@ -3,6 +3,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.ResourceBundle;
 
 import oracle.jdbc.OracleConnection;
 import oracle.jdbc.OracleDriver;
@@ -13,9 +14,9 @@ import oracle.jdbc.dcn.DatabaseChangeRegistration;
  
 public class DBChangeNotification {
 
-	static final String USERNAME= "SCSALES";
-	static final String PASSWORD= "SCSALES";
 	static String URL;
+	static String USER;
+	static String PASS;
 	public static void main(String[] argv) {
 	    /*if(argv.length < 1)
 	    {
@@ -24,8 +25,11 @@ public class DBChangeNotification {
 	        
 	        System.exit(1);
 	    }*/
+		ResourceBundle rb = ResourceBundle.getBundle("prop");
 	    //URL = argv[0];
-	    URL = "jdbc:oracle:thin:@localhost:1521:orcl";
+		URL = rb.getString("URL");
+		USER = rb.getString("USER");
+		PASS = rb.getString("PASS");
 	    DBChangeNotification demo = new DBChangeNotification();
 	    try
 	    {
@@ -153,8 +157,8 @@ public class DBChangeNotification {
     {
         OracleDriver dr = new OracleDriver();
         Properties prop = new Properties();
-        prop.setProperty("user",DBChangeNotification.USERNAME);
-        prop.setProperty("password",DBChangeNotification.PASSWORD);
+        prop.setProperty("user",DBChangeNotification.USER);
+        prop.setProperty("password",DBChangeNotification.PASS);
         
         return (OracleConnection)dr.connect(DBChangeNotification.URL, prop);
     }			    
