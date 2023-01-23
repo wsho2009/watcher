@@ -58,23 +58,23 @@ public class DeleteFile {
                     totalSize = totalSize + f.length();
                     totalCount++;
                     if (deleteFlag == true) {
+						//https://qiita.com/fumikomatsu/items/b98cc4d0dee782323096
                     	// 現在日時を取得
                         Calendar st = Calendar.getInstance();//Calendarクラスで現在日時を取得
-                        st.add(Calendar.DATE, 0);           //現在値を取得
+                        st.add(Calendar.DATE, -60);          //現在値を取得(60日前)
                         Date start = st.getTime();           //Dateに直す
                         // ファイルの更新日時
                         Long lastModified = f.lastModified();
                         Date koushin = new Date(lastModified);
 
-                        //if(start.compareTo(koushin) < -1 ){//compareToで比較
+                        if(start.compareTo(koushin) < -1 ){//compareToで比較
                         	SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                             String update_time = simpleDateFormat.format(koushin);
-                            System.out.println(update_time+"："+fileName);
-                        //}
+                            System.out.println(update_time+"： "+fileName);
+                        }
                         
                     }
                 }
-                
             }
         }
 	}
