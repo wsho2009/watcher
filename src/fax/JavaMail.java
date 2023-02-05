@@ -19,8 +19,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeUtility;
 
-//http://sakusaku-techs.com/java/java-mail-attach/#i-3	★
-//https://qiita.com/kiririnyo/items/c5f6d95aa314e877ab25	PDF添付２
 public class JavaMail {
 
 //	public JavaMail() {
@@ -48,15 +46,14 @@ public class JavaMail {
         properties.put("mail.smtp.host", mailHost);	// ホスト
         properties.put("mail.smtp.port", mailPort);	// ポート指定（サブミッションポート）
         properties.put("mail.smtp.auth", "false");	// 認証
-        //properties.put("mail.transport.protocol", "smtp");
-        //properties.put("mail.smtp.ssl.trust", "*");
+        // STARTTLSによる暗号化
         //properties.put("mail.smtp.starttls.enable", "true");		// STARTTLSによる暗号化
         //properties.put("mail.smtp.starttls.enable", "false");
-        properties.put("mail.smtp.debug", "true");
+        //properties.put("mail.smtp.debug", "true");
         // タイムアウト
         properties.put("mail.smtp.connectiontimeout", "10000");
         properties.put("mail.smtp.timeout", "10000");
-
+        
         try {
             // セッションの作成。
             final Session session = Session.getInstance(properties , new javax.mail.Authenticator(){

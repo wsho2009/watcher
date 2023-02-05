@@ -25,6 +25,10 @@ https://mvnrepository.com/artifact/com.sun.activation/javax.activation
 https://mvnrepository.com/artifact/com.sun.activation/javax.activation/1.2.0
 →javax.activation-1.2.0.jar
 
+//サンプル
+http://sakusaku-techs.com/java/java-mail-attach/#i-3	添付：String形式
+https://qiita.com/kiririnyo/items/c5f6d95aa314e877ab25	添付：ByteArrayInputStream形式
+
 ■Jsonライブラリ
 jackson-annotations-2.14.1.jar
 jackson-core-2.14.1.jar
