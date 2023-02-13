@@ -1,4 +1,4 @@
-package ocr;
+package sample;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;

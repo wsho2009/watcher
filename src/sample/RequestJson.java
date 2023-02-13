@@ -1,4 +1,4 @@
-package ocr;
+package sample;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -27,6 +27,7 @@ public class RequestJson {
 		    URL url = new URL(urlString);
 		    HttpURLConnection con = (HttpURLConnection)url.openConnection();
 		    con.connect(); // URL接続
+		    
 		    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream())); 
 		    String tmp = "";
 

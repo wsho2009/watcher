@@ -2,3 +2,4 @@
 *.pdf
 *.xlsx
 src/prop.properties
+data/ocr_watchdog.dat
