@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -330,7 +333,24 @@ public class OcrProcess {
 	}
 
 	private void exportResultCSV(OcrDataFormBean ocrData) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        //DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        
+        System.out.println("■exportResultCSV: start");
+        //出力先フォルダ取得(なければ作成)
+        ocrData.outFoloderPath = gtTgtFolderPath(ocrData);
+        
+        //DLファイル(ファイルパス)取得
+        String csvFilePath = ocrData.outFoloderPath + ocrData.csvFileName;
+        //既存ファイルがあれば削除
+        Path p = Paths.get(csvFilePath);
+        if (Files.exists(p)) {
+        	try{
+        		Files.delete(p);
+    		}catch(IOException e){
+    			System.out.println(e);
+    		}
+        }
+        System.out.println("  CSV file: " + csvFilePath); 
 		//---------------------------------------
 		//HTTP request parametes
 		//---------------------------------------
@@ -356,7 +376,7 @@ public class OcrProcess {
 		//---------------------------------------
 		//HTTP response process
 		//---------------------------------------
-        if (res == HttpURLConnection.HTTP_OK) {
+        if (res != HttpURLConnection.HTTP_OK) {
 	        System.err.printf("Failed %d\n", res);
 	        return;
         } 
@@ -368,18 +388,30 @@ public class OcrProcess {
      	
      	postOcrProcess(ocrData);
      	
+        System.out.println("■exportResultCSV: end");
      	return;
 	}
 
-	private void postOcrProcess(OcrDataFormBean ocrData) {
+	private Object gtTgtFolderPath(OcrDataFormBean ocrData) {
 		// TODO 自動生成されたメソッド・スタブ
-		
+		return null;
 	}
 
 	private void convertCSV(OcrDataFormBean ocrData) {
 		// TODO 自動生成されたメソッド・スタブ
 		
 	}
+	
+	private void postOcrProcess(OcrDataFormBean ocrData) {
+        System.out.println("■postOcrProcess: start");
+        //出力先フォルダ取得（この時点では作成されている）
+        String outputFolderPath = ocrData.outFoloderPath;
+        
+        
+        System.out.println("■postOcrProcess: end");
+		
+	}
+
 
 	
 }

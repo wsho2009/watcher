@@ -10,15 +10,14 @@ import javax.net.ssl.HttpsURLConnection;
 
 //https://ja.getdocs.org/java-how-to-send-http-request-getpost-in-java
 //http://www.dd.e-mansion.com/~kumada/laboratory/column/java_post.html
-public class httprequest {
+public class Httprequest {
 
 	private final String USER__AGENT = "Mozilla/5.0";
-	public httprequest() {
+	public Httprequest() {
 	}
 
 	public static void main(String[] args) throws Exception {
-		// TODO 自動生成されたメソッド・スタブ
-		httprequest http = new httprequest();
+		Httprequest http = new Httprequest();
 
         System.out.println("Testing 1 - Send Http GET request");
         http.sendGet();
