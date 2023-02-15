@@ -12,19 +12,32 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class OcrProcess {
 
 	static boolean ocrExlusiveFlag;
-	static String DX_URL = "DX_URL";
-	static String DX_PROXY_HOST = "DX_PROXY_HOST";
-	static int DX_PROXY_PORT = 8080;
-	static String API_KEY = "API_KEY";
-	static String USER_ID = "USER_ID";
+	static String DX_URL;
+	static String DX_PROXY_HOST;
+	static int DX_PROXY_PORT;
+	static String API_KEY;
+	static String API_KEY_VALUE;
+	static String USER_ID;
+	static String OUTPUT_PATH;
 
 	public OcrProcess() {
+		ocrExlusiveFlag = false;
+		ResourceBundle rb = ResourceBundle.getBundle("prop");
+		DX_URL = rb.getString("DX_URL");
+		DX_PROXY_HOST = rb.getString("DX_PROXY_HOST");
+		DX_PROXY_PORT = Integer.parseInt(rb.getString("DX_PROXY_PORT"));
+		API_KEY = rb.getString("API_KEY");
+		API_KEY_VALUE = rb.getString("API_KEY_VALUE");
+		USER_ID = rb.getString("USER_ID");
+		
+		OUTPUT_PATH = rb.getString("OUTPUT_PATH");
 	}
 	
 	public static void main(String[] args) {
@@ -103,8 +116,7 @@ public class OcrProcess {
 		api.method = "POST";
 		api.proxy_host = DX_PROXY_HOST;
 		api.proxy_port = DX_PROXY_PORT;
-		api.header_key[0] = "X-xxxx";
-		api.header_value[0] = API_KEY;
+		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		api.formData.userId = USER_ID;
 		api.formData.documentId = documentId;
@@ -188,8 +200,7 @@ public class OcrProcess {
 		api.method = "GET";
 		api.proxy_host = DX_PROXY_HOST;
 		api.proxy_port = DX_PROXY_PORT;
-		api.header_key[0] = "X-xxxxx";
-		api.header_value[0] = API_KEY;
+		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		//HTTP request process
 		//---------------------------------------
@@ -260,8 +271,7 @@ public class OcrProcess {
 		api.method = "GET";
 		api.proxy_host = DX_PROXY_HOST;
 		api.proxy_port = DX_PROXY_PORT;
-		api.header_key[0] = "X-xxxxx";
-		api.header_value[0] = API_KEY;
+		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		//HTTP request process
 		//---------------------------------------
@@ -337,7 +347,7 @@ public class OcrProcess {
         
         System.out.println("■exportResultCSV: start");
         //出力先フォルダ取得(なければ作成)
-        ocrData.outFoloderPath = gtTgtFolderPath(ocrData);
+        ocrData.outFoloderPath = getTgtFolderPath(ocrData);
         
         //DLファイル(ファイルパス)取得
         String csvFilePath = ocrData.outFoloderPath + ocrData.csvFileName;
@@ -355,13 +365,12 @@ public class OcrProcess {
 		//HTTP request parametes
 		//---------------------------------------
 		WebApi api = new WebApi();
-		api.url = DX_URL + String.format("xxxx%s", ocrData.unitId);
+		api.url = DX_URL + String.format("xxxx/%s/xxx", ocrData.unitId);
 		api.method = "GET";
 		api.proxy_host = DX_PROXY_HOST;
 		api.proxy_port = DX_PROXY_PORT;
-		api.header_key[0] = "X-xxxxx";
-		api.header_value[0] = API_KEY;
-		api.saveFile = ocrData.csvFileName;
+		api.putRequestHeader(API_KEY, API_KEY_VALUE);
+		api.saveFile = csvFilePath;	//フルパス
 		//---------------------------------------
 		//HTTP request process
 		//---------------------------------------
@@ -369,7 +378,6 @@ public class OcrProcess {
 		try {
 			res = api.download(ocrData.csvFileName);
 		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 			res = -1;
 		}
@@ -392,8 +400,13 @@ public class OcrProcess {
      	return;
 	}
 
-	private Object gtTgtFolderPath(OcrDataFormBean ocrData) {
-		// TODO 自動生成されたメソッド・スタブ
+	//OCRデータの出力先フォルダパスを取得
+	private String getTgtFolderPath(OcrDataFormBean ocrData) {
+		String teigiFolder = OUTPUT_PATH + ocrData.docsetName + "\\" + ocrData.unitName;
+		
+		//サブフォルダ(定義名＋日時)作成
+		//...
+				
 		return null;
 	}
 
@@ -404,8 +417,16 @@ public class OcrProcess {
 	
 	private void postOcrProcess(OcrDataFormBean ocrData) {
         System.out.println("■postOcrProcess: start");
-        //出力先フォルダ取得（この時点では作成されている）
-        String outputFolderPath = ocrData.outFoloderPath;
+        //出力先フォルダ取得（なければ作成）
+        String outputFolderPath = getTgtFolderPath(ocrData);
+        
+        //読込画像ファイルを取得
+        String uploadFilePath = ocrData.uploadFilePath;	//pdf
+        Path p1 = Paths.get(uploadFilePath);
+        String fileName = p1.getFileName().toString();
+        String copyToFile = OUTPUT_PATH + fileName;
+        //pdf回転変換
+        
         
         
         System.out.println("■postOcrProcess: end");

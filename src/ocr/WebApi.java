@@ -26,8 +26,9 @@ public class WebApi {
 	String method;
 	String proxy_host;
 	int proxy_port;
-	String[] header_key;
-	String[] header_value;
+	String[] header_key = new String[5];
+	String[] header_value = new String[5];
+	int headerCnt = 0;
 	
 	//response
     String responseMessage;
@@ -40,15 +41,18 @@ public class WebApi {
     	String documentId;
     	String file;
     }
-    FormData formData;	//for Upload
+    FormData formData = new WebApi.FormData();	//for Upload
 	public String saveFile;	//for Download
     
     private static final String EOL = "\r\n";
     public WebApi() {
-    	String[] header_key = new String[5];
-    	String[] header_value = new String[5];
-		WebApi.FormData form = new WebApi.FormData();
 	}
+
+    public void putRequestHeader(String key, String value) {
+		this.header_key[headerCnt] = key;
+		this.header_value[headerCnt] = value;
+    	headerCnt++;
+    }
 
 	public int upload(String filename) throws IOException {
 		
@@ -76,6 +80,20 @@ public class WebApi {
             final String boundary = UUID.randomUUID().toString();
             con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             try (OutputStream out = con.getOutputStream()) {
+            	if (formData.userId.equals("") == false) {
+                out.write(("--" + boundary + EOL +
+                        "Content-Disposition: form-data; name=\"userId\"; " +
+                        "\"" + formData.userId + "\"" + EOL + EOL)
+                        .getBytes(StandardCharsets.UTF_8)
+                    );
+            	}
+            	if (formData.documentId.equals("") == false) {
+                out.write(("--" + boundary + EOL +
+                        "Content-Disposition: form-data; name=\"documentId\"; " +
+                        "\"" + formData.documentId + "\"" + EOL + EOL)
+                        .getBytes(StandardCharsets.UTF_8)
+                    );
+            	}
                 out.write(("--" + boundary + EOL +
                     "Content-Disposition: form-data; name=\"file\"; " +
                     "filename=\"" + filename + "\"" + EOL +

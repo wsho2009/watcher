@@ -28,7 +28,7 @@ public class OcrDataFormDAO {
 	public ArrayList<OcrDataFormBean> queryNotComplete() throws SQLException {
 		
 		String sql = "select o.*,t.* from OCRDATATABLE o, OCRFORMTABLE t " +
-					 "where o.UNIT_NAME=t.FORM_NAME order by o.CREATEDAT";
+					 "where o.STATUS <> 'COMPLETE' and o.UNIT_NAME=t.NAME order by o.CREATEDAT";
         //接続情報取得
 		ResourceBundle rb = ResourceBundle.getBundle("prop");
 		String URL = rb.getString("URL");
@@ -53,12 +53,12 @@ public class OcrDataFormDAO {
     			dataform.unitName = rs.getString("UNIT_NAME");
     			dataform.uploadFilePath = rs.getString("UPLOAD_PATH");
     			dataform.status = rs.getString("STATUS");
-    			dataform.csvFileName = rs.getString("DL_CSV_NAME");
+    			dataform.csvFileName = rs.getString("CSV_FILENAME");
     			dataform.createdAt = rs.getString("CREATEDAT");
     			dataform.linkUrl = rs.getString("LINK_URL");
     			dataform.type = rs.getInt("TYPE");
     			dataform.setNo(rs.getString("NO"));
-    			dataform.setName(rs.getString("FORM_NAME"));
+    			dataform.setName(rs.getString("NAME"));
     			dataform.setDocumentId(rs.getString("DOCUMENT_ID"));
     			dataform.setDocumentName(rs.getString("DOCUMENT_NAME"));
     			dataform.setDocsetId(rs.getString("DOCSET_ID"));

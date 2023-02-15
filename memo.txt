@@ -30,7 +30,7 @@ http://sakusaku-techs.com/java/java-mail-attach/#i-3	添付：String形式
 https://qiita.com/kiririnyo/items/c5f6d95aa314e877ab25	添付：ByteArrayInputStream形式
 
 ■Jsonライブラリ
-jackson-annotations-2.14.1.jar
-jackson-core-2.14.1.jar
-jackson-databind-2.14.1.jar
+jackson-annotations-2.14.2.jar
+jackson-core-2.14.2.jar
+jackson-databind-2.14.2.jar
 
