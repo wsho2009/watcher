@@ -21,18 +21,23 @@ public class OcrProcess {
 	static boolean ocrExlusiveFlag;
 	static String DX_URL;
 	static String DX_PROXY_HOST;
-	static int DX_PROXY_PORT;
+	static String DX_PROXY_PORT;
+	static String DX_PROXY_USER;
+	static String DX_PROXY_PASSWORD;
 	static String API_KEY;
 	static String API_KEY_VALUE;
 	static String USER_ID;
 	static String OUTPUT_PATH;
-
+	static ResourceBundle rb;
+	
 	public OcrProcess() {
 		ocrExlusiveFlag = false;
-		ResourceBundle rb = ResourceBundle.getBundle("prop");
+		rb = ResourceBundle.getBundle("prop");
 		DX_URL = rb.getString("DX_URL");
 		DX_PROXY_HOST = rb.getString("DX_PROXY_HOST");
-		DX_PROXY_PORT = Integer.parseInt(rb.getString("DX_PROXY_PORT"));
+		DX_PROXY_PORT = rb.getString("DX_PROXY_PORT");
+		DX_PROXY_USER = rb.getString("DX_PROXY_USER");
+		DX_PROXY_PASSWORD = rb.getString("DX_PROXY_PASSWORD");
 		API_KEY = rb.getString("API_KEY");
 		API_KEY_VALUE = rb.getString("API_KEY_VALUE");
 		USER_ID = rb.getString("USER_ID");
@@ -112,10 +117,10 @@ public class OcrProcess {
 		//HTTP request parametes
 		//---------------------------------------
 		WebApi api = new WebApi();
-		api.url = DX_URL +"xxxx";
+		String DX_ADD_PAGE = rb.getString("DX_ADD_PAGE");
+		api.url = DX_URL + DX_ADD_PAGE;
 		api.method = "POST";
-		api.proxy_host = DX_PROXY_HOST;
-		api.proxy_port = DX_PROXY_PORT;
+		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		api.formData.userId = USER_ID;
@@ -128,7 +133,6 @@ public class OcrProcess {
 		try {
 			res = api.upload(uploadFilePath);
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
 			res = -1;
 			e.printStackTrace();
 		}
@@ -198,8 +202,7 @@ public class OcrProcess {
 		WebApi api = new WebApi();
 		api.url = DX_URL + String.format("xxxx%s", ocrData.unitId);
 		api.method = "GET";
-		api.proxy_host = DX_PROXY_HOST;
-		api.proxy_port = DX_PROXY_PORT;
+		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		//HTTP request process
@@ -269,8 +272,7 @@ public class OcrProcess {
 		WebApi api = new WebApi();
 		api.url = DX_URL + String.format("xxxx%s", ocrData.unitId);
 		api.method = "GET";
-		api.proxy_host = DX_PROXY_HOST;
-		api.proxy_port = DX_PROXY_PORT;
+		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		//---------------------------------------
 		//HTTP request process
@@ -367,8 +369,7 @@ public class OcrProcess {
 		WebApi api = new WebApi();
 		api.url = DX_URL + String.format("xxxx/%s/xxx", ocrData.unitId);
 		api.method = "GET";
-		api.proxy_host = DX_PROXY_HOST;
-		api.proxy_port = DX_PROXY_PORT;
+		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
 		api.saveFile = csvFilePath;	//フルパス
 		//---------------------------------------
@@ -392,7 +393,12 @@ public class OcrProcess {
      	int errorCode = api.responseJson.get("errorCode").asInt();;
      	String message = api.responseJson.get("message").asText();;
 		
-     	convertCSV(ocrData);
+     	try {
+			convertCSV(ocrData);
+		} catch (Throwable e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
      	
      	postOcrProcess(ocrData);
      	
@@ -410,7 +416,7 @@ public class OcrProcess {
 		return null;
 	}
 
-	private void convertCSV(OcrDataFormBean ocrData) {
+	private void convertCSV(OcrDataFormBean ocrData)  throws Throwable{
 		// TODO 自動生成されたメソッド・スタブ
 		
 	}

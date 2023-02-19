@@ -10,9 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -24,8 +24,13 @@ public class WebApi {
 	//request
 	String url;
 	String method;
-	String proxy_host;
-	int proxy_port;
+    static class Proxy {
+    	String host;
+    	String port;
+    	String user;
+    	String password;
+    }
+    static Proxy proxy = new WebApi.Proxy();
 	String[] header_key = new String[5];
 	String[] header_value = new String[5];
 	int headerCnt = 0;
@@ -44,10 +49,18 @@ public class WebApi {
     FormData formData = new WebApi.FormData();	//for Upload
 	public String saveFile;	//for Download
     
-    private static final String EOL = "\r\n";
+    //private static final String EOL = "\r\n";
+	private static final String EOL = "\n";
     public WebApi() {
 	}
 
+	public void setProxy(String host, String port, String user, String password) {
+    	WebApi.proxy.host = host;
+    	WebApi.proxy.port = port;
+    	WebApi.proxy.user = user;
+    	WebApi.proxy.password = password;
+	}
+	
     public void putRequestHeader(String key, String value) {
 		this.header_key[headerCnt] = key;
 		this.header_value[headerCnt] = value;
@@ -59,16 +72,23 @@ public class WebApi {
         try (FileInputStream file = new FileInputStream(filename)) {
     		//http://www.mwsoft.jp/programming/java/http_proxy.html
     		HttpURLConnection con = null;
-    		if (this.proxy_host.equals("") != true) {
-    			Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-    					new InetSocketAddress(this.proxy_host, this.proxy_port));
-                con = (HttpURLConnection) new URL(url).openConnection(proxy);
-    		} else {
-                con = (HttpURLConnection) new URL(url).openConnection();
+    		if (WebApi.proxy.host != null) {
+    			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
+    			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
+    			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
+                System.setProperty("proxySet", "true");
+                System.setProperty("proxyHost", WebApi.proxy.host);
+                System.setProperty("proxyPort", WebApi.proxy.port);
+                Authenticator.setDefault(new Authenticator() {
+					@Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(WebApi.proxy.user, WebApi.proxy.password.toCharArray());
+                    }
+                });
     		}
+            con = (HttpURLConnection) new URL(url).openConnection();
             con.setDoOutput(true);
             con.setRequestMethod(method);
-		    con.connect(); // URL接続
 		    
             //add request header
             for (int i=0; i<5; i++) {
@@ -80,17 +100,17 @@ public class WebApi {
             final String boundary = UUID.randomUUID().toString();
             con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             try (OutputStream out = con.getOutputStream()) {
-            	if (formData.userId.equals("") == false) {
+            	if (formData.userId != null) {
                 out.write(("--" + boundary + EOL +
-                        "Content-Disposition: form-data; name=\"userId\"; " +
-                        "\"" + formData.userId + "\"" + EOL + EOL)
+                        "Content-Disposition: form-data; name=\"userId\"" + EOL + 
+                        formData.userId + EOL)
                         .getBytes(StandardCharsets.UTF_8)
                     );
             	}
-            	if (formData.documentId.equals("") == false) {
+            	if (formData.documentId != null) {
                 out.write(("--" + boundary + EOL +
-                        "Content-Disposition: form-data; name=\"documentId\"; " +
-                        "\"" + formData.documentId + "\"" + EOL + EOL)
+                        "Content-Disposition: form-data; name=\"documentId\"" + EOL + 
+                        formData.documentId + EOL)
                         .getBytes(StandardCharsets.UTF_8)
                     );
             	}
@@ -124,13 +144,22 @@ public class WebApi {
 		//http://www.mwsoft.jp/programming/java/http_proxy.html
 		URL obj = new URL(url);
 		HttpURLConnection con = null;
-		if (this.proxy_host.equals("") != true) {
-			Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-					new InetSocketAddress(this.proxy_host, this.proxy_port));
-	        con = (HttpURLConnection) obj.openConnection(proxy);
-		} else {
-	        con = (HttpURLConnection) obj.openConnection();
+		if (WebApi.proxy.host != null) {
+			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
+			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
+			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
+            System.setProperty("proxySet", "true");
+            System.setProperty("proxyHost", WebApi.proxy.host);
+            System.setProperty("proxyPort", WebApi.proxy.port);
+            Authenticator.setDefault(new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(WebApi.proxy.user, WebApi.proxy.password.toCharArray());
+                }
+            });
 		}
+        con = (HttpURLConnection) obj.openConnection();
+        
         //optional default is GET
         con.setRequestMethod(method);
 
@@ -174,13 +203,22 @@ public class WebApi {
 			URL obj = new URL(url);
 			HttpURLConnection urlConnection = null;
 			//http://www.mwsoft.jp/programming/java/http_proxy.html
-			if (this.proxy_host.equals("") != true) {
-				Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-						new InetSocketAddress(this.proxy_host, this.proxy_port));
-				urlConnection = (HttpURLConnection) obj.openConnection(proxy);
-			} else {
-				urlConnection = (HttpURLConnection) obj.openConnection();
-			}
+    		if (WebApi.proxy.host != null) {
+    			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
+    			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
+    			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
+                System.setProperty("proxySet", "true");
+                System.setProperty("proxyHost", WebApi.proxy.host);
+                System.setProperty("proxyPort", WebApi.proxy.port);
+                Authenticator.setDefault(new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(WebApi.proxy.user, WebApi.proxy.password.toCharArray());
+                    }
+                });
+    		}
+			urlConnection = (HttpURLConnection) obj.openConnection();
+			
 			// false の場合、ユーザーとの対話処理は許可されていません。
 			urlConnection.setAllowUserInteraction(false);
 			// true の場合、プロトコルは自動的にリダイレクトに従います
@@ -228,4 +266,5 @@ public class WebApi {
 		   throw ex;
 		}
 	}
+
 }

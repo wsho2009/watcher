@@ -33,6 +33,13 @@ public class OcrDataFormBean implements Serializable {
     @JsonProperty("docsetId") String docsetId;
     @JsonProperty("docsetName") String docsetName;
     
+    @JsonProperty("headerNum") int headerNum;
+    @JsonProperty("meisaiNum") int meisaiNum;
+    @JsonProperty("colHinemei") int colHinemei;
+    @JsonProperty("colSuryo") int colSuryo;
+    @JsonProperty("colTanka") int colTanka;
+    @JsonProperty("colKingaku") int colKingaku;
+    
     @JsonProperty("mailFlag") int mailFlag;	//DBなし
 	@JsonProperty("outFoloderPath") String outFoloderPath;	//DBなし
         

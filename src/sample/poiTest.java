@@ -1,4 +1,4 @@
-//https://style.potepan.com/articles/27539.html#JavaExcelApache_POI
+package sample;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,17 +10,21 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
  
+//https://style.potepan.com/articles/27539.html#JavaExcelApache_POI
 public class poiTest {
     public static void main(String[] args) throws EncryptedDocumentException, IOException{
     	try {
 	        // Excelファイルへアクセス(eclipse上でパスをしていないとプロジェクトパスになる)
-	        Workbook excel = WorkbookFactory.create(new File("User.xlsx"));
+    		//String filePath = "User.xlsx";
+    		String filePath = "AAAA.xlsx";
+	        Workbook excel = WorkbookFactory.create(new File(filePath));
 	    
 	        // シート名を取得
-	        Sheet sheet = excel.getSheet("user_data");
+	        //Sheet sheet = excel.getSheet("user_data");
+	        Sheet sheet = excel.getSheetAt(0);
 	    
 	        // 0行目を取得
-	        Row row = sheet.getRow(0);
+	        Row row = sheet.getRow(1);
 	    
 	        // 0番目のセルの値を取得
 	        Cell cell_name = row.getCell(0);
