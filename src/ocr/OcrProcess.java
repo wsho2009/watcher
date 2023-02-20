@@ -210,7 +210,8 @@ public class OcrProcess {
 		//HTTP request parametes
 		//---------------------------------------
 		WebApi api = new WebApi();
-		api.url = DX_URL + String.format("xxxx%s", ocrData.unitId);
+		String DX_READ_UNIT = rb.getString("DX_READ_UNIT");
+		api.url = DX_URL + String.format(DX_READ_UNIT, ocrData.unitId);
 		api.method = "GET";
 		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
@@ -280,7 +281,8 @@ public class OcrProcess {
 		//HTTP request parametes
 		//---------------------------------------
 		WebApi api = new WebApi();
-		api.url = DX_URL + String.format("xxxx%s", ocrData.unitId);
+		String DX_READ_UNIT = rb.getString("DX_READ_UNIT");
+		api.url = DX_URL + String.format(DX_READ_UNIT, ocrData.unitId);
 		api.method = "GET";
 		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
@@ -377,7 +379,8 @@ public class OcrProcess {
 		//HTTP request parametes
 		//---------------------------------------
 		WebApi api = new WebApi();
-		api.url = DX_URL + String.format("xxxx/%s/xxx", ocrData.unitId);
+		String DX_UNIT_EXPORT = rb.getString("DX_UNIT_EXPORT");
+		api.url = DX_URL + String.format(DX_UNIT_EXPORT, ocrData.unitId);
 		api.method = "GET";
 		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
@@ -429,7 +432,6 @@ public class OcrProcess {
     private ArrayList<ArrayList<String>> parseCSV(String fileName) {
     	ArrayList<ArrayList<String>> list = null;
         try {
-
             // 入力CSVファイルの読み込み
             File file= new File(fileName);
             FileInputStream input = new FileInputStream(file);
