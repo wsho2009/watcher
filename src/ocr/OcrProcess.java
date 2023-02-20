@@ -1,8 +1,12 @@
 package ocr;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +19,12 @@ import java.util.Date;
 import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 public class OcrProcess {
 
@@ -416,9 +426,169 @@ public class OcrProcess {
 		return null;
 	}
 
-	private void convertCSV(OcrDataFormBean ocrData)  throws Throwable{
-		// TODO 自動生成されたメソッド・スタブ
+    private ArrayList<ArrayList<String>> parseCSV(String fileName) {
+    	ArrayList<ArrayList<String>> list = null;
+        try {
+
+            // 入力CSVファイルの読み込み
+            File file= new File(fileName);
+            FileInputStream input = new FileInputStream(file);
+            InputStreamReader stream= new InputStreamReader(input,"SJIS");
+            BufferedReader br = new BufferedReader(stream);
+
+            list = new ArrayList<ArrayList<String>>();
+            String line;
+
+            while ((line = br.readLine()) != null) {
+	            // 自作メソッド呼び出し
+            	ArrayList<String> data = csvSplit(line);
+	            list.add(data);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		return list;
+	}
+    //https://qiita.com/takashi-fki/items/c7095ccb41fe169db5f4
+	private ArrayList<String> csvSplit(String line) {
+
+        char c;
+        StringBuilder s = new StringBuilder();
+        String str;
+        ArrayList<String> data = new ArrayList<String>();
+        boolean singleQuoteFlg = false;
+
+        for (int i=0; i < line.length(); i++){
+            c = line.charAt(i);
+            if (c == ',' && !singleQuoteFlg) {
+            	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
+            	System.out.println(s.toString() + ": " + str);
+                data.add(str);
+                s.delete(0,s.length());
+            } else if (c == ',' && singleQuoteFlg) {
+                s.append(c);
+            } else if (c == '\"') {
+                singleQuoteFlg = !singleQuoteFlg;
+                s.append(c);
+            } else {
+                s.append(c);
+            }
+        }
+        if (!singleQuoteFlg) {
+        	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
+        	System.out.println(s.toString() + ": " + str);
+            data.add(str);
+            s.delete(0,s.length());
+        }
+        
+        return data;
+    }
+    
+    private void convertCSV(OcrDataFormBean ocrData) throws Throwable {
+		String teigiName = ocrData.Name;
+		String documentName = ocrData.documentName;
+		String createdAt = ocrData.createdAt;
+		int headerNum = ocrData.headerNum;
+		int meisaiNum = ocrData.meisaiNum;
+		String[][] convTbl;
 		
+		System.out.println("■convertCSV: start");
+		
+		String outputcsvFile = ocrData.outFoloderPath + ocrData.csvFileName;
+        ArrayList<ArrayList<String>> list = parseCSV(outputcsvFile);
+        int maxRow = list.size();
+		int maxCol = 0;
+        for (int r=0; r<list.size(); r++) {
+        	for (int c=0; c<list.get(r).size(); c++) {
+        		System.out.println(list.get(r).get(c));
+        	}
+        	System.out.println("");		
+            if (maxCol < list.get(r).size())
+            	maxCol = list.get(r).size();
+        }
+        //String[] csv_data = csv.get(0).split(",");
+        //int maxCol = csv.get(0).split(",").length;	//1行目データ部の列数
+        int repeatNum = (maxCol-ocrData.headerNum)/ocrData.meisaiNum;
+        int rowWidth = repeatNum * (maxRow-1) + 1;
+        int colWidth = ocrData.headerNum + ocrData.meisaiNum;
+        
+        convTbl = new String[rowWidth][colWidth];
+        //CSV2Excelテーブル変換処理
+        int r2offset = 0;
+        String str;
+        for (int r=0; r<maxRow; r++) {
+        	if (r == 0) {
+        		//1行目のヘッダ(カラム)
+        		for (int c=0; c<colWidth; c++) {
+        			convTbl[r][c] = list.get(r).get(c);
+        		}
+        	} else {
+        		//加工前データの変換
+        		int r2;
+        		for (int p=0; p<repeatNum; p++) {
+        			r2 = (r-1)*repeatNum + 1 + p - r2offset;
+        			//ヘッダデータ
+        			for (int c=0; c<headerNum; c++) {
+	        			convTbl[r2][c] = list.get(r).get(c);
+        			}
+        			//明細データ
+        			for (int c=0; c<meisaiNum; c++) {
+        				str = list.get(r).get(headerNum + p*meisaiNum);
+        				if (str.equals("") == true) {
+        					//convTbl.splice(r2,1);	//データ削除
+        					r2offset++;	//1行戻すためのオフセット加算
+        					rowWidth--;	//データ削除分のRowWidthを更新
+        					break;
+        				}
+        				str = list.get(r).get(c + headerNum + p*meisaiNum);
+        				convTbl[r2][c + headerNum] = str;
+        			}
+        		}
+        	
+        	}
+        }
+        
+    	//RirekiDBへの履歴データ書き込み
+    	//Excel形式で保存 / 履歴テーブルDBに書き込み
+    	//Excelオープン
+    	//String xlsPath = ".\\templete\\" + documentName + ".xlsx";
+        String xlsPath = documentName + ".xlsx";
+        Workbook excel = WorkbookFactory.create(new File(xlsPath));
+        Sheet sheet = excel.getSheetAt(0);	//1シート目
+        Row row;
+        Cell cell;
+        boolean resultFlag;
+        String resultMsg;
+        String value;
+        for (int rowIdx=1; rowIdx<rowWidth; rowIdx++) {	//データ2行目（明細）から開始
+        	resultFlag = false;
+        	resultMsg = "";
+        	String fields = "COL0,COL1,COL2;";
+        	String values = "'" + createdAt + "','" + teigiName + "','" + rowIdx + "'";
+		    row = sheet.createRow(rowIdx);	//行の生成
+        	for (int colIdx=0; colIdx<colWidth; colIdx++) {
+    	        //row = sheet.getRow(rowIdx);
+        		//cellValue = row.getCell(colIdx);
+	        	value = convTbl[rowIdx][colIdx].trim();
+	        	convTbl[rowIdx][colIdx] = value;
+			    cell = row.createCell(colIdx);	//セルの生成
+			    cell.setCellValue(value);
+	        	
+	        	//通常データは、4列目（+3）から挿入
+	        	fields = fields + "COL" + (colIdx+3) + ",";
+	        	values = values + "'" + value + "'";
+	    	}
+        }
+        //XLSXのファイル保存
+		String outputcsvPath = ocrData.outFoloderPath + ocrData.csvFileName;
+        String outFilePath = outputcsvPath.replace(".csv",".xlsx");
+        System.out.println("  XLSXファイル保存: " + outFilePath);
+	    FileOutputStream out = null;
+	    out = new FileOutputStream(outFilePath);
+	    excel.write(out);
+	    
+	    //CSVファイル削除
 	}
 	
 	private void postOcrProcess(OcrDataFormBean ocrData) {
