@@ -28,6 +28,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 public class OcrProcess {
 
+	static ResourceBundle rb;
 	static boolean ocrExlusiveFlag;
 	static String DX_URL;
 	static String DX_PROXY_HOST;
@@ -38,8 +39,16 @@ public class OcrProcess {
 	static String API_KEY_VALUE;
 	static String USER_ID;
 	static String OUTPUT_PATH;
-	static ResourceBundle rb;
 	
+	static void SystemLogPrint(String msg) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        System.out.printf("[%s]%s\n", dateFormat.format(new Date()), msg);
+	}
+
+	static void SystemErrPrint(String msg) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        System.err.printf("[%s]%s\n", dateFormat.format(new Date()), msg);
+	}
 	public OcrProcess() {
 		ocrExlusiveFlag = false;
 		rb = ResourceBundle.getBundle("prop");
@@ -51,7 +60,6 @@ public class OcrProcess {
 		API_KEY = rb.getString("API_KEY");
 		API_KEY_VALUE = rb.getString("API_KEY_VALUE");
 		USER_ID = rb.getString("USER_ID");
-		
 		OUTPUT_PATH = rb.getString("OUTPUT_PATH");
 	}
 	
@@ -63,9 +71,9 @@ public class OcrProcess {
             public void run() {
                 // 定期的に実行したい処理
                 count++;
-                System.out.println(count + "回目のタスクが実行されました。");
+                SystemLogPrint(count + "回目のタスクが実行されました。");
                 if (ocrExlusiveFlag == true ) {
-                	System.out.println("wait...");
+                	SystemLogPrint("wait...");
                 	return;
                 }
                 OcrProcess process = new OcrProcess();
@@ -76,14 +84,14 @@ public class OcrProcess {
                 //watchdog 書き込み処理
                 Date date = new Date();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd kk:mm:ss");
-                System.out.println(sdf.format(date));
+                SystemLogPrint(sdf.format(date));
                 try {
                 	File file = new File(".\\data\\ocr_watchdog.dat");
                 	FileWriter filewriter = new FileWriter(file);
                 	filewriter.write(sdf.format(date));
                 	filewriter.close();
             	}catch(IOException e){
-            	  System.out.println(e);
+            		SystemLogPrint(e.toString());
             	}                
                 //---------------------------------
         	}
@@ -96,20 +104,27 @@ public class OcrProcess {
 			ArrayList<OcrDataFormBean> list = OcrDataFormDAO.getInstance().queryNotComplete();
 			int count = list.size();
 			if (count != 0) {
-				System.out.println("  find data: " + count);
+				SystemLogPrint("  find data: " + count);
 			}
 			for (int o=0; o<count; o++) {
 				OcrDataFormBean ocrDataForm = (OcrDataFormBean)list.get(o);
 				if (ocrDataForm.status.equals("REGIST") == true) {
-					System.out.println("  " + o + " addReadingPage");
+					SystemLogPrint("  " + o + " addReadingPage");
 					addReadingPage(ocrDataForm.documentId, ocrDataForm.uploadFilePath);
 					break;
 				} else if (ocrDataForm.status.equals("REGISTED") == true) {
-					System.out.println("  " + o + " searchReadingUnit");
+					SystemLogPrint("  " + o + " searchReadingUnit");
 					searchReadingUnit(ocrDataForm, false);
 				} else if (ocrDataForm.status.equals("OCR") == true || ocrDataForm.status.equals("ENTRY") == true) {
-					System.out.println("  " + o + " proecssReadingUnit");
+					SystemLogPrint("  " + o + " proecssReadingUnit");
 					proecssReadingUnit(ocrDataForm);
+				} else if (ocrDataForm.status.equals("SORT") == true) {
+					SystemLogPrint("  " + o + " addSortingPage");
+					addSortingPage(ocrDataForm.documentName, ocrDataForm.documentId, ocrDataForm.uploadFilePath);
+					break;
+				} else if (ocrDataForm.status.equals("SORTED") == true) {
+					SystemLogPrint("  " + o + " searchReadingUnit");
+					searchReadingUnit(ocrDataForm, false);
 				}
 			}
 		} catch (SQLException e) {
@@ -141,7 +156,7 @@ public class OcrProcess {
 		//---------------------------------------
 		int res;
 		try {
-			res = api.upload(uploadFilePath);
+			res = api.upload();
 		} catch (IOException e) {
 			res = -1;
 			e.printStackTrace();
@@ -149,54 +164,70 @@ public class OcrProcess {
      	OcrDataFormBean ocrData = new OcrDataFormBean();
      	//30msにrequestのレスポンスが返ってい来ない時がある対策
         //---------------------------------------
-        ocrData.uploadFilePath = uploadFilePath;
-        ocrData.status = "REGISTED";
-		//Date date = new Date();        
-		String dateToStr = dateFormat.format(new Date());	            
-        ocrData.createdAt = dateToStr;
-        
-        ocrData.updateFromUploadFilePath();
+        try {
+            ocrData.uploadFilePath = uploadFilePath;
+            ocrData.status = "REGISTED";
+    		String dateToStr = dateFormat.format(new Date());	            
+            ocrData.createdAt = dateToStr;
+			ocrData.updateFromUploadFilePath();
+		} catch (SQLException e1) {
+			// TODO 自動生成された catch ブロック
+			e1.printStackTrace();
+		}
+
 		//---------------------------------------
 		//HTTP response process
 		//---------------------------------------
         if (res != HttpURLConnection.HTTP_OK) {
             System.err.printf("Failed %d\n", res);
         } else {
-            System.err.println("Success!");
          	String status = api.responseJson.get("status").asText();;
          	int errorCode = api.responseJson.get("errorCode").asInt();;
          	String message = api.responseJson.get("message").asText();;
          	String unitId = api.responseJson.get("unitId").asText();;
+			SystemLogPrint("  status: " + status + "  " + message);
          	
          	if (errorCode != 0) {
          		System.err.println("  addReadingPage: HTTPレスポンスエラー: " + errorCode);
-	            ocrData.uploadFilePath = uploadFilePath;
-	            ocrData.unitName = "登録不可";
-	            ocrData.status = "COMPLETE";
-	            //DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-	    		//Date date2 = new Date();        
-	    		String dateToStr2 = dateFormat.format(new Date());	            
-	            ocrData.createdAt = dateToStr2;
-	            
-	            ocrData.updateFromUploadFilePath();
+	            try {
+		            ocrData.uploadFilePath = uploadFilePath;
+		            ocrData.unitName = "登録不可";
+		            ocrData.status = "COMPLETE";
+		            ocrData.createdAt = dateFormat.format(new Date());	            
+					ocrData.updateFromUploadFilePath();
+				} catch (SQLException e) {
+					// TODO 自動生成された catch ブロック
+					e.printStackTrace();
+				}
 	            return;
          	}
             
     		//unitId,statusの更新
-        	ocrData.uploadFilePath = uploadFilePath;
-        	ocrData.unitId = unitId;
-        	ocrData.status = "OCR";
-        	ocrData.updateFromUploadFilePath();	//更新
+        	try {
+            	ocrData.uploadFilePath = uploadFilePath;
+            	ocrData.unitId = unitId;
+            	ocrData.status = "OCR";
+				ocrData.updateFromUploadFilePath();
+			} catch (SQLException e) {
+				// TODO 自動生成された catch ブロック
+				e.printStackTrace();
+			}	//更新
         	
-        	//ReadingUnit情報の崇徳(2000ms後に1回実行)
+        	//ReadingUnit情報の取得(2000ms後に1回実行)
         	searchReadingUnit(ocrData, false);
         	
         	return;
         }
-        
-		
 	}
 	
+	//---------------------------------------
+	//仕分けニット追加（処理）
+	//---------------------------------------
+	private void addSortingPage(String documentName, String sorterRuleId, String uploadFilePath) {
+		// TODO 自動生成されたメソッド・スタブ
+		
+	}
+
 	//---------------------------------------
 	//読取ユニット検索
 	//---------------------------------------
@@ -206,6 +237,7 @@ public class OcrProcess {
 			//add後、まだ、レスポンスが返ってきていないケースがあるので、終了する。
 			return;
 		}
+		
 		//---------------------------------------
 		//HTTP request parametes
 		//---------------------------------------
@@ -222,7 +254,6 @@ public class OcrProcess {
 		try {
 			res = api.sendGet();
 		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 			res = -1;
 		}
@@ -235,7 +266,7 @@ public class OcrProcess {
         } 
      	int errorCode = api.responseJson.get("errorCode").asInt();;
     	if (errorCode != 0) {
-    		//リトライ(20090ms後)
+    		//リトライ(2000ms後)
     		Timer timer = new Timer(false);
     		TimerTask task = new TimerTask() {
     			 
@@ -258,25 +289,28 @@ public class OcrProcess {
     	String createdAt = api.responseJson.get("readingUnits").get(0).get("createdAt").asText();
     	
 		//unitId,statusの更新
-    	ocrData.status = "OCR";
-    	ocrData.unitId = unitId;
-    	ocrData.csvFileName = csvFileName;
-    	ocrData.docsetId = docsetId;
-    	ocrData.createdAt = createdAt.substring(0, createdAt.length()-2);	//語尾の.0(２桁)をとる
-    	ocrData.linkUrl = "";	//TBD
-    	ocrData.updateFromUploadFilePath();	//更新
+    	try {
+        	ocrData.unitId = unitId;
+        	ocrData.status = "OCR";
+        	ocrData.csvFileName = csvFileName;
+        	ocrData.docsetId = docsetId;
+        	ocrData.createdAt = createdAt.substring(0, createdAt.length()-2);	//語尾の.0(２桁)をとる
+        	ocrData.linkUrl = "";	//TBD
+			ocrData.updateFromUploadFilePath();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
     	
     	return;
 	}
 
+	//---------------------------------------
 	//読取ユニット処理
+	//---------------------------------------
 	private void proecssReadingUnit(OcrDataFormBean ocrData) {
-		if (ocrData.unitId.equals("") == true) {
-			System.err.println("■searchReadingUnit: unitId不正エラー");
-			//add後、まだ、レスポンスが返ってきていないケースがあるので、終了する。
-			return;
-		}
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		System.out.printf("[%s]"+"■proecssReadingUnit: start\n", dateFormat.format(new Date()));
+        
 		//---------------------------------------
 		//HTTP request parametes
 		//---------------------------------------
@@ -293,15 +327,15 @@ public class OcrProcess {
 		try {
 			res = api.sendGet();
 		} catch (Exception e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 			res = -1;
+			return; 
 		}
 		//---------------------------------------
 		//HTTP response process
 		//---------------------------------------
         if (res == HttpURLConnection.HTTP_OK) {
-	        System.err.printf("Failed %d\n", res);
+	        System.err.printf("[%s]"+"Failed %d\n", dateFormat.format(new Date()), res);
 	        return;
         } 
      	String status = api.responseJson.get("status").asText();;
@@ -309,15 +343,18 @@ public class OcrProcess {
      	String message = api.responseJson.get("message").asText();;
      	if (status != "success") {
 	    	if (errorCode == 103) {
-	     		System.err.println("  addReadingPage: HTTPレスポンスエラー: " + errorCode);
-	            //ocrData.uploadFilePath = uploadFilePath;
-	            ocrData.unitName = "削除";
-	            ocrData.status = "COMPLETE";
-	    		//Date date = new Date();        
-	    		String dateToStr = dateFormat.format(new Date());	            
-	            ocrData.createdAt = dateToStr;
-	            
-	            ocrData.updateFromUploadFilePath();
+	     		System.err.printf("[%s]"+"  addReadingPage: HTTPレスポンスエラー: %d", dateFormat.format(new Date()), errorCode);
+	            try {
+		            //ocrData.uploadFilePath = uploadFilePath;
+		            ocrData.unitName = "削除";
+		            ocrData.status = "COMPLETE";
+		    		//Date date = new Date();        
+		    		String dateToStr = dateFormat.format(new Date());	            
+		            ocrData.createdAt = dateToStr;
+					ocrData.updateFromUploadFilePath();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 	            return;
 	    	}
 	    	return;
@@ -333,33 +370,38 @@ public class OcrProcess {
     	String createdAt = api.responseJson.get("readingUnits").get(0).get("createdAt").asText();
     	
 		//unitId,statusの更新
-    	ocrData.status = "OCR";
-    	ocrData.unitId = unitId;
-    	ocrData.csvFileName = csvFileName;
-    	ocrData.docsetId = docsetId;
-    	ocrData.createdAt = createdAt.substring(0, createdAt.length()-2);	//語尾の.0(２桁)をとる
-    	ocrData.linkUrl = "";	//TBD
-    	
-    	if (unitStatus.equals("13")==true && ocrData.status.equals("ENTRY")==false 
-    			&& ocrData.status.equals("SORT")==false) {
-    		//CSVエクスポート（メール送信なし）、OCR後処理
-    		ocrData.mailFlag = 0;	//結果送付なし
-    		exportResultCSV(ocrData);
-    	} else if (unitStatus.equals("16")==true && unitStatus.equals("22")==true) {
-    		//CSVエクスポート（メール送信あり）、OCR後処理
-    		ocrData.mailFlag = 0;	//結果送付あり
-    		exportResultCSV(ocrData);
-    	}
-    	
-    	ocrData.updateFromUploadFilePath();	//更新
+    	try {
+        	ocrData.status = "OCR";
+        	ocrData.unitId = unitId;
+        	ocrData.csvFileName = csvFileName;
+        	ocrData.docsetId = docsetId;
+        	ocrData.createdAt = createdAt.substring(0, createdAt.length()-2);	//語尾の.0(２桁)をとる
+        	ocrData.linkUrl = "";	//TBD
+        	
+        	if (unitStatus.equals("13")==true && ocrData.status.equals("ENTRY")==false 
+        			&& ocrData.status.equals("SORT")==false) {
+        		//CSVエクスポート（メール送信なし）、OCR後処理
+        		ocrData.mailFlag = 0;	//結果送付なし
+        		exportResultCSV(ocrData);
+        	} else if (unitStatus.equals("16")==true && unitStatus.equals("22")==true) {
+        		//CSVエクスポート（メール送信あり）、OCR後処理
+        		ocrData.mailFlag = 0;	//結果送付あり
+        		exportResultCSV(ocrData);
+        	}
+			ocrData.updateFromUploadFilePath();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}	//更新
     	
     	return;
 	}
 
+	//---------------------------------------
+	//読取結果のCSVエクスポート
+	//---------------------------------------
 	private void exportResultCSV(OcrDataFormBean ocrData) {
         //DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        
-        System.out.println("■exportResultCSV: start");
+        SystemLogPrint("■exportResultCSV: start");
         //出力先フォルダ取得(なければ作成)
         ocrData.outFoloderPath = getTgtFolderPath(ocrData);
         
@@ -371,10 +413,10 @@ public class OcrProcess {
         	try{
         		Files.delete(p);
     		}catch(IOException e){
-    			System.out.println(e);
+    			SystemLogPrint(e.toString());
     		}
         }
-        System.out.println("  CSV file: " + csvFilePath); 
+        SystemLogPrint("  CSV file: " + csvFilePath);
 		//---------------------------------------
 		//HTTP request parametes
 		//---------------------------------------
@@ -384,13 +426,14 @@ public class OcrProcess {
 		api.method = "GET";
 		api.setProxy(DX_PROXY_HOST, DX_PROXY_PORT, DX_PROXY_USER, DX_PROXY_PASSWORD);
 		api.putRequestHeader(API_KEY, API_KEY_VALUE);
-		api.saveFile = csvFilePath;	//フルパス
+		api.saveFile = csvFilePath;	//CSVファイルフルパス
+		
 		//---------------------------------------
 		//HTTP request process
 		//---------------------------------------
 		int res;
 		try {
-			res = api.download(ocrData.csvFileName);
+			res = api.download();
 		} catch (Exception e) {
 			e.printStackTrace();
 			res = -1;
@@ -399,7 +442,7 @@ public class OcrProcess {
 		//HTTP response process
 		//---------------------------------------
         if (res != HttpURLConnection.HTTP_OK) {
-	        System.err.printf("Failed %d\n", res);
+	        SystemErrPrint("  Failed: " + res);
 	        return;
         } 
      	String status = api.responseJson.get("status").asText();;
@@ -409,24 +452,52 @@ public class OcrProcess {
      	try {
 			convertCSV(ocrData);
 		} catch (Throwable e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
+			return;
 		}
      	
      	postOcrProcess(ocrData);
      	
-        System.out.println("■exportResultCSV: end");
+     	SystemLogPrint("■exportResultCSV: end");
      	return;
 	}
 
+	//---------------------------------------
 	//OCRデータの出力先フォルダパスを取得
+	//---------------------------------------
 	private String getTgtFolderPath(OcrDataFormBean ocrData) {
 		String teigiFolder = OUTPUT_PATH + ocrData.docsetName + "\\" + ocrData.unitName;
+        Path teigiFolderPath = Paths.get(teigiFolder);
+    	if (!Files.exists(teigiFolderPath)) {
+    		try {
+				Files.createDirectory(teigiFolderPath);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
 		
 		//サブフォルダ(定義名＋日時)作成
-		//...
-				
-		return null;
+        Path p = Paths.get(ocrData.uploadFilePath);
+        // パスの末尾（ファイル名）を取得
+        String fileName = p.getFileName().toString();
+		//yyyy/MM/dd HH:mm:ss → yyyy-MM-dd_HH-mm-ss
+		String dtStr = ocrData.createdAt;
+		dtStr = dtStr.replace("/", "-");
+		dtStr = dtStr.replace(" ", "_");
+		dtStr = dtStr.replace(":", "-");
+		String subFolder = ocrData.unitName + "_" + dtStr;
+		String outputFolder = teigiFolder + "\\" + subFolder;
+		//フォルダ作成（フォルダ存在を確認し、なければフォルダ作成）
+        Path subFolderPath = Paths.get(subFolder);
+    	if (!Files.exists(subFolderPath)) {
+    		try {
+				Files.createDirectory(subFolderPath);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	
+		return outputFolder;
 	}
 
     private ArrayList<ArrayList<String>> parseCSV(String fileName) {
@@ -465,7 +536,7 @@ public class OcrProcess {
             c = line.charAt(i);
             if (c == ',' && !singleQuoteFlg) {
             	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
-            	System.out.println(s.toString() + ": " + str);
+            	SystemLogPrint(s.toString() + ": " + str);
                 data.add(str);
                 s.delete(0,s.length());
             } else if (c == ',' && singleQuoteFlg) {
@@ -479,7 +550,7 @@ public class OcrProcess {
         }
         if (!singleQuoteFlg) {
         	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
-        	System.out.println(s.toString() + ": " + str);
+        	SystemLogPrint(s.toString() + ": " + str);
             data.add(str);
             s.delete(0,s.length());
         }
@@ -495,7 +566,7 @@ public class OcrProcess {
 		int meisaiNum = ocrData.meisaiNum;
 		String[][] convTbl;
 		
-		System.out.println("■convertCSV: start");
+		SystemLogPrint("■convertCSV: start");
 		
 		String outputcsvFile = ocrData.outFoloderPath + ocrData.csvFileName;
         ArrayList<ArrayList<String>> list = parseCSV(outputcsvFile);
@@ -503,9 +574,9 @@ public class OcrProcess {
 		int maxCol = 0;
         for (int r=0; r<list.size(); r++) {
         	for (int c=0; c<list.get(r).size(); c++) {
-        		System.out.println(list.get(r).get(c));
+        		SystemLogPrint(list.get(r).get(c));
         	}
-        	System.out.println("");		
+        	SystemLogPrint("");		
             if (maxCol < list.get(r).size())
             	maxCol = list.get(r).size();
         }
@@ -547,7 +618,6 @@ public class OcrProcess {
         				convTbl[r2][c + headerNum] = str;
         			}
         		}
-        	
         	}
         }
         
@@ -570,8 +640,6 @@ public class OcrProcess {
         	String values = "'" + createdAt + "','" + teigiName + "','" + rowIdx + "'";
 		    row = sheet.createRow(rowIdx);	//行の生成
         	for (int colIdx=0; colIdx<colWidth; colIdx++) {
-    	        //row = sheet.getRow(rowIdx);
-        		//cellValue = row.getCell(colIdx);
 	        	value = convTbl[rowIdx][colIdx].trim();
 	        	convTbl[rowIdx][colIdx] = value;
 			    cell = row.createCell(colIdx);	//セルの生成
@@ -585,7 +653,7 @@ public class OcrProcess {
         //XLSXのファイル保存
 		String outputcsvPath = ocrData.outFoloderPath + ocrData.csvFileName;
         String outFilePath = outputcsvPath.replace(".csv",".xlsx");
-        System.out.println("  XLSXファイル保存: " + outFilePath);
+        SystemLogPrint("  XLSXファイル保存: " + outFilePath);
 	    FileOutputStream out = null;
 	    out = new FileOutputStream(outFilePath);
 	    excel.write(out);
@@ -594,7 +662,7 @@ public class OcrProcess {
 	}
 	
 	private void postOcrProcess(OcrDataFormBean ocrData) {
-        System.out.println("■postOcrProcess: start");
+        SystemLogPrint("■postOcrProcess: start");
         //出力先フォルダ取得（なければ作成）
         String outputFolderPath = getTgtFolderPath(ocrData);
         
@@ -605,12 +673,6 @@ public class OcrProcess {
         String copyToFile = OUTPUT_PATH + fileName;
         //pdf回転変換
         
-        
-        
-        System.out.println("■postOcrProcess: end");
-		
+        SystemLogPrint("■postOcrProcess: end");
 	}
-
-
-	
 }

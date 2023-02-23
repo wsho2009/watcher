@@ -15,6 +15,8 @@ import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,8 +51,8 @@ public class WebApi {
     FormData formData = new WebApi.FormData();	//for Upload
 	public String saveFile;	//for Download
     
-    //private static final String EOL = "\r\n";
-	private static final String EOL = "\n";
+    private static final String EOL = "\r\n";
+	//private static final String EOL = "\n";
     public WebApi() {
 	}
 
@@ -67,15 +69,18 @@ public class WebApi {
     	headerCnt++;
     }
 
-	public int upload(String filename) throws IOException {
-		
-        try (FileInputStream file = new FileInputStream(filename)) {
+	public int upload() throws IOException {
+		if (this.formData.file == null)
+            return -1;
+        Path p = Paths.get(this.formData.file);
+        // パスの末尾（ファイル名）を取得
+        String fileName = p.getFileName().toString();
+        System.out.println( fileName );
+           
+        try (FileInputStream file = new FileInputStream(this.formData.file)) {
     		//http://www.mwsoft.jp/programming/java/http_proxy.html
     		HttpURLConnection con = null;
     		if (WebApi.proxy.host != null) {
-    			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-    			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
-    			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
                 System.setProperty("proxySet", "true");
                 System.setProperty("proxyHost", WebApi.proxy.host);
                 System.setProperty("proxyPort", WebApi.proxy.port);
@@ -86,13 +91,13 @@ public class WebApi {
                     }
                 });
     		}
-            con = (HttpURLConnection) new URL(url).openConnection();
+            con = (HttpURLConnection) new URL(this.url).openConnection();
             con.setDoOutput(true);
             con.setRequestMethod(method);
 		    
             //add request header
             for (int i=0; i<5; i++) {
-            	if (this.header_key[i].equals("") == true) 
+            	if (this.header_key[i] == null) 
             		break;
         		con.setRequestProperty(this.header_key[i], this.header_value[i]);
             }
@@ -116,7 +121,8 @@ public class WebApi {
             	}
                 out.write(("--" + boundary + EOL +
                     "Content-Disposition: form-data; name=\"file\"; " +
-                    "filename=\"" + filename + "\"" + EOL +
+                    "filename=\"" + fileName + "\"" + EOL +
+                    //"filename=\"A0001.pdf\"" + EOL +
                     "Content-Type: application/octet-stream" + EOL + EOL)
                     .getBytes(StandardCharsets.UTF_8)
                 );
@@ -129,10 +135,15 @@ public class WebApi {
                 out.flush();
                 System.err.println(con.getResponseMessage());
                 
-                responseCode = con.getResponseCode();
-                responseMessage = con.getResponseMessage();
+                this.responseCode = con.getResponseCode();
+                this.responseMessage = con.getResponseMessage();
+
+                //resuponse Code と Bodyを解析
+                ObjectMapper mapper = new ObjectMapper();
+                this.responseJson = mapper.readTree(this.responseMessage.toString());
+                this.responseStr = this.responseMessage.toString();
                 
-                return responseCode;
+                return this.responseCode;
             } finally {
                 con.disconnect();
             }
@@ -142,12 +153,9 @@ public class WebApi {
 	public int sendGet() throws Exception {
 
 		//http://www.mwsoft.jp/programming/java/http_proxy.html
-		URL obj = new URL(url);
+		URL obj = new URL(this.url);
 		HttpURLConnection con = null;
 		if (WebApi.proxy.host != null) {
-			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
-			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
             System.setProperty("proxySet", "true");
             System.setProperty("proxyHost", WebApi.proxy.host);
             System.setProperty("proxyPort", WebApi.proxy.port);
@@ -161,11 +169,11 @@ public class WebApi {
         con = (HttpURLConnection) obj.openConnection();
         
         //optional default is GET
-        con.setRequestMethod(method);
+        con.setRequestMethod(this.method);
 
         //add request header
         for (int i=0; i<5; i++) {
-        	if (this.header_key[i].equals("") == true) 
+            if (this.header_key[i] == null) 
         		break;
     		con.setRequestProperty(this.header_key[i], this.header_value[i]);
         }
@@ -197,16 +205,16 @@ public class WebApi {
 
     }
 
-	public int download(String filePath) throws IOException {
+	public int download() throws IOException {
+		if (this.saveFile == null)
+            return -1;
+		
 		int httpStatusCode = 0;
 		try {
-			URL obj = new URL(url);
-			HttpURLConnection urlConnection = null;
+			URL obj = new URL(this.url);
+			HttpURLConnection con = null;
 			//http://www.mwsoft.jp/programming/java/http_proxy.html
     		if (WebApi.proxy.host != null) {
-    			//Proxy proxy = new Proxy(Proxy.Type.HTTP, 
-    			//		new InetSocketAddress(WebApi.proxy_host, WebApi.proxy_port));
-    			//con = (HttpURLConnection) new URL(url).openConnection(proxy);
                 System.setProperty("proxySet", "true");
                 System.setProperty("proxyHost", WebApi.proxy.host);
                 System.setProperty("proxyPort", WebApi.proxy.port);
@@ -217,31 +225,31 @@ public class WebApi {
                     }
                 });
     		}
-			urlConnection = (HttpURLConnection) obj.openConnection();
+			con = (HttpURLConnection) obj.openConnection();
 			
 			// false の場合、ユーザーとの対話処理は許可されていません。
-			urlConnection.setAllowUserInteraction(false);
+			con.setAllowUserInteraction(false);
 			// true の場合、プロトコルは自動的にリダイレクトに従います
-			urlConnection.setInstanceFollowRedirects(true);
+			con.setInstanceFollowRedirects(true);
 			// URL 要求のメソッドを"GET"に設定
-			urlConnection.setRequestMethod("GET");
+			con.setRequestMethod(method);
 
 	        //add request header
 	        for (int i=0; i<5; i++) {
-	        	if (this.header_key[i].equals("") == true) 
+            	if (this.header_key[i] == null) 
 	        		break;
-	        	urlConnection.setRequestProperty(this.header_key[i], this.header_value[i]);
+                con.setRequestProperty(this.header_key[i], this.header_value[i]);
 	        }
 			
-			urlConnection.connect();
+			con.connect();
 			
 			// HTTP 応答メッセージから状態コードを取得します
-			this.responseCode = urlConnection.getResponseCode();
+			this.responseCode = con.getResponseCode();
 			if (httpStatusCode != HttpURLConnection.HTTP_OK) {
 				throw new Exception();
 			}
 	        //レスポンスボディの読み出し
-			writeStream(urlConnection.getInputStream(), filePath);
+			writeStream(con.getInputStream(), saveFile);
 			System.out.println("Completed!!");
 			
 		} catch (Exception ex) {
@@ -266,5 +274,4 @@ public class WebApi {
 		   throw ex;
 		}
 	}
-
 }
