@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 //https://qiita.com/MikuriyaHiroshi/items/4f213595b7b69e87eb01
@@ -16,12 +18,8 @@ public class Uploader {
 	//}
 
 	public static void main(String[] args) {
-        if (args.length < 2) {
-            System.err.println("Input [Upload file path] [Upload URL]");
-            return;
-        }
-        String filename = args[0];
-        String url = args[1];
+        String filename = "D:\\pleiades\\input\\A0001_20230211232606.pdf";
+        String url = "http://localhost:8080/upload/upload?type=upload";
         int res;
 		try {
 			res = Uploader.Send(filename, url, "POST");
@@ -36,8 +34,12 @@ public class Uploader {
 		}
 	}
 
-    public static int Send(String filename, String url, String method) throws IOException {
-        try (FileInputStream file = new FileInputStream(filename)) {
+    public static int Send(String filepath, String url, String method) throws IOException {
+        Path p = Paths.get(filepath);
+        // パスの末尾（ファイル名）を取得
+        String filename = p.getFileName().toString();
+        System.out.println( filename );
+        try (FileInputStream file = new FileInputStream(filepath)) {
             HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
             final String boundary = UUID.randomUUID().toString();
             con.setDoOutput(true);
@@ -64,5 +66,4 @@ public class Uploader {
             }
         }
     }
-
 }
