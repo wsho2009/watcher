@@ -17,22 +17,14 @@ public class OcrDataFormBean implements Serializable {
 	String PASS;
 	
 	//OcrData
-	@JsonProperty("unitId")
-	String unitId;
-	@JsonProperty("unitName")
-	String unitName;
-	@JsonProperty("uploadFilePath")
-	String uploadFilePath;
-	@JsonProperty("status")
-	String status;
-	@JsonProperty("csvFileName")
-	String csvFileName;
-	@JsonProperty("createdAt")
-	String createdAt;
-	@JsonProperty("linkUrl")
-	String linkUrl;
-	@JsonProperty("type")
-	int type;
+	@JsonProperty("unitId")	String unitId;
+	@JsonProperty("unitName") String unitName;
+	@JsonProperty("uploadFilePath")	String uploadFilePath;
+	@JsonProperty("status")	String status;
+	@JsonProperty("csvFileName") String csvFileName;
+	@JsonProperty("createdAt")	String createdAt;
+	@JsonProperty("linkUrl") String linkUrl;
+	@JsonProperty("type") int type;
 	
 	//OcrForm
 	@JsonProperty("No") String No;
@@ -48,9 +40,9 @@ public class OcrDataFormBean implements Serializable {
     @JsonProperty("colSuryo") int colSuryo;
     @JsonProperty("colTanka") int colTanka;
     @JsonProperty("colKingaku") int colKingaku;
-    
-    @JsonProperty("mailFlag") int mailFlag;	//DBなし
-	@JsonProperty("outFoloderPath") String outFoloderPath;	//DBなし
+    //DBなし
+    @JsonProperty("mailFlag") int mailFlag;	
+	@JsonProperty("outFoloderPath") String outFoloderPath;
         
 	public OcrDataFormBean() {
 		//接続情報取得

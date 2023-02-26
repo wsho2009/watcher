@@ -1,4 +1,5 @@
-// https://docs.oracle.com/cd/E16338_01/java.112/b56281/dbchgnf.htm
+package dbchange;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,21 +13,14 @@ import oracle.jdbc.dcn.DatabaseChangeEvent;
 import oracle.jdbc.dcn.DatabaseChangeListener;
 import oracle.jdbc.dcn.DatabaseChangeRegistration;
  
+//https://docs.oracle.com/cd/E16338_01/java.112/b56281/dbchgnf.htm
 public class DBChangeNotification {
 
 	static String URL;
 	static String USER;
 	static String PASS;
 	public static void main(String[] argv) {
-	    /*if(argv.length < 1)
-	    {
-	        System.out.println("Error: You need to provide the URL in the first argument.");
-	        System.out.println("  For example: > java -classpath .:ojdbc5.jar DBChangeNotification \"jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=orcl)))\"");
-	        
-	        System.exit(1);
-	    }*/
 		ResourceBundle rb = ResourceBundle.getBundle("prop");
-	    //URL = argv[0];
 		URL = rb.getString("URL");
 		USER = rb.getString("USER");
 		PASS = rb.getString("PASS");
@@ -83,7 +77,7 @@ public class DBChangeNotification {
             {}
             String[] tableNames = dcr.getTables();
             for(int i=0;i<tableNames.length;i++)
-              System.out.println(tableNames[i]+" is part of the registration.");
+            	System.out.println(tableNames[i]+" is part of the registration.");
             rs.close();
             stmt.close();
         }

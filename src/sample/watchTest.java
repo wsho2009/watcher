@@ -1,3 +1,5 @@
+package sample;
+
 import static java.nio.file.StandardWatchEventKinds.*;
 
 import java.io.IOException;
