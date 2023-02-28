@@ -26,6 +26,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
+import utils.MyUtils;
+
 public class OcrProcess {
 
 	static ResourceBundle rb;
@@ -40,15 +42,6 @@ public class OcrProcess {
 	static String USER_ID;
 	static String OUTPUT_PATH;
 	
-	static void SystemLogPrint(String msg) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        System.out.printf("[%s]%s\n", dateFormat.format(new Date()), msg);
-	}
-
-	static void SystemErrPrint(String msg) {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        System.err.printf("[%s]%s\n", dateFormat.format(new Date()), msg);
-	}
 	public OcrProcess() {
 		ocrExlusiveFlag = false;
 		rb = ResourceBundle.getBundle("prop");
@@ -71,9 +64,9 @@ public class OcrProcess {
             public void run() {
                 // 定期的に実行したい処理
                 count++;
-                SystemLogPrint(count + "回目のタスクが実行されました。");
+                MyUtils.SystemLogPrint(count + "回目のタスクが実行されました。");
                 if (ocrExlusiveFlag == true ) {
-                	SystemLogPrint("wait...");
+                	MyUtils.SystemLogPrint("wait...");
                 	return;
                 }
                 OcrProcess process = new OcrProcess();
@@ -84,14 +77,14 @@ public class OcrProcess {
                 //watchdog 書き込み処理
                 Date date = new Date();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd kk:mm:ss");
-                SystemLogPrint(sdf.format(date));
+                MyUtils.SystemLogPrint(sdf.format(date));
                 try {
                 	File file = new File(".\\data\\ocr_watchdog.dat");
                 	FileWriter filewriter = new FileWriter(file);
                 	filewriter.write(sdf.format(date));
                 	filewriter.close();
             	}catch(IOException e){
-            		SystemLogPrint(e.toString());
+            		MyUtils.SystemLogPrint(e.toString());
             	}                
                 //---------------------------------
         	}
@@ -104,26 +97,26 @@ public class OcrProcess {
 			ArrayList<OcrDataFormBean> list = OcrDataFormDAO.getInstance().queryNotComplete();
 			int count = list.size();
 			if (count != 0) {
-				SystemLogPrint("  find data: " + count);
+				MyUtils.SystemLogPrint("  find data: " + count);
 			}
 			for (int o=0; o<count; o++) {
 				OcrDataFormBean ocrDataForm = (OcrDataFormBean)list.get(o);
 				if (ocrDataForm.status.equals("REGIST") == true) {
-					SystemLogPrint("  " + o + " addReadingPage");
+					MyUtils.SystemLogPrint("  " + o + " addReadingPage");
 					addReadingPage(ocrDataForm.documentId, ocrDataForm.uploadFilePath);
 					break;
 				} else if (ocrDataForm.status.equals("REGISTED") == true) {
-					SystemLogPrint("  " + o + " searchReadingUnit");
+					MyUtils.SystemLogPrint("  " + o + " searchReadingUnit");
 					searchReadingUnit(ocrDataForm, false);
 				} else if (ocrDataForm.status.equals("OCR") == true || ocrDataForm.status.equals("ENTRY") == true) {
-					SystemLogPrint("  " + o + " proecssReadingUnit");
+					MyUtils.SystemLogPrint("  " + o + " proecssReadingUnit");
 					proecssReadingUnit(ocrDataForm);
 				} else if (ocrDataForm.status.equals("SORT") == true) {
-					SystemLogPrint("  " + o + " addSortingPage");
+					MyUtils.SystemLogPrint("  " + o + " addSortingPage");
 					addSortingPage(ocrDataForm.documentName, ocrDataForm.documentId, ocrDataForm.uploadFilePath);
 					break;
 				} else if (ocrDataForm.status.equals("SORTED") == true) {
-					SystemLogPrint("  " + o + " searchReadingUnit");
+					MyUtils.SystemLogPrint("  " + o + " searchReadingUnit");
 					searchReadingUnit(ocrDataForm, false);
 				}
 			}
@@ -185,7 +178,7 @@ public class OcrProcess {
          	int errorCode = api.responseJson.get("errorCode").asInt();;
          	String message = api.responseJson.get("message").asText();;
          	String unitId = api.responseJson.get("unitId").asText();;
-			SystemLogPrint("  status: " + status + "  " + message);
+			MyUtils.SystemLogPrint("  status: " + status + "  " + message);
          	
          	if (errorCode != 0) {
          		System.err.println("  addReadingPage: HTTPレスポンスエラー: " + errorCode);
@@ -401,7 +394,7 @@ public class OcrProcess {
 	//---------------------------------------
 	private void exportResultCSV(OcrDataFormBean ocrData) {
         //DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        SystemLogPrint("■exportResultCSV: start");
+        MyUtils.SystemLogPrint("■exportResultCSV: start");
         //出力先フォルダ取得(なければ作成)
         ocrData.outFoloderPath = getTgtFolderPath(ocrData);
         
@@ -413,10 +406,10 @@ public class OcrProcess {
         	try{
         		Files.delete(p);
     		}catch(IOException e){
-    			SystemLogPrint(e.toString());
+    			MyUtils.SystemLogPrint(e.toString());
     		}
         }
-        SystemLogPrint("  CSV file: " + csvFilePath);
+        MyUtils.SystemLogPrint("  CSV file: " + csvFilePath);
 		//---------------------------------------
 		//HTTP request parametes
 		//---------------------------------------
@@ -442,7 +435,7 @@ public class OcrProcess {
 		//HTTP response process
 		//---------------------------------------
         if (res != HttpURLConnection.HTTP_OK) {
-	        SystemErrPrint("  Failed: " + res);
+	        MyUtils.SystemErrPrint("  Failed: " + res);
 	        return;
         } 
      	String status = api.responseJson.get("status").asText();;
@@ -458,7 +451,7 @@ public class OcrProcess {
      	
      	postOcrProcess(ocrData);
      	
-     	SystemLogPrint("■exportResultCSV: end");
+     	MyUtils.SystemLogPrint("■exportResultCSV: end");
      	return;
 	}
 
@@ -536,7 +529,7 @@ public class OcrProcess {
             c = line.charAt(i);
             if (c == ',' && !singleQuoteFlg) {
             	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
-            	SystemLogPrint(s.toString() + ": " + str);
+            	MyUtils.SystemLogPrint(s.toString() + ": " + str);
                 data.add(str);
                 s.delete(0,s.length());
             } else if (c == ',' && singleQuoteFlg) {
@@ -550,7 +543,7 @@ public class OcrProcess {
         }
         if (!singleQuoteFlg) {
         	str = s.toString().replace("\"","");	//ダブルクォーテーションは外す。
-        	SystemLogPrint(s.toString() + ": " + str);
+        	MyUtils.SystemLogPrint(s.toString() + ": " + str);
             data.add(str);
             s.delete(0,s.length());
         }
@@ -566,7 +559,7 @@ public class OcrProcess {
 		int meisaiNum = ocrData.meisaiNum;
 		String[][] convTbl;
 		
-		SystemLogPrint("■convertCSV: start");
+		MyUtils.SystemLogPrint("■convertCSV: start");
 		
 		String outputcsvFile = ocrData.outFoloderPath + ocrData.csvFileName;
         ArrayList<ArrayList<String>> list = parseCSV(outputcsvFile);
@@ -574,9 +567,9 @@ public class OcrProcess {
 		int maxCol = 0;
         for (int r=0; r<list.size(); r++) {
         	for (int c=0; c<list.get(r).size(); c++) {
-        		SystemLogPrint(list.get(r).get(c));
+        		MyUtils.SystemLogPrint(list.get(r).get(c));
         	}
-        	SystemLogPrint("");		
+        	MyUtils.SystemLogPrint("");		
             if (maxCol < list.get(r).size())
             	maxCol = list.get(r).size();
         }
@@ -653,7 +646,7 @@ public class OcrProcess {
         //XLSXのファイル保存
 		String outputcsvPath = ocrData.outFoloderPath + ocrData.csvFileName;
         String outFilePath = outputcsvPath.replace(".csv",".xlsx");
-        SystemLogPrint("  XLSXファイル保存: " + outFilePath);
+        MyUtils.SystemLogPrint("  XLSXファイル保存: " + outFilePath);
 	    FileOutputStream out = null;
 	    out = new FileOutputStream(outFilePath);
 	    excel.write(out);
@@ -662,7 +655,7 @@ public class OcrProcess {
 	}
 	
 	private void postOcrProcess(OcrDataFormBean ocrData) {
-        SystemLogPrint("■postOcrProcess: start");
+        MyUtils.SystemLogPrint("■postOcrProcess: start");
         //出力先フォルダ取得（なければ作成）
         String outputFolderPath = getTgtFolderPath(ocrData);
         
@@ -673,6 +666,6 @@ public class OcrProcess {
         String copyToFile = OUTPUT_PATH + fileName;
         //pdf回転変換
         
-        SystemLogPrint("■postOcrProcess: end");
+        MyUtils.SystemLogPrint("■postOcrProcess: end");
 	}
 }

@@ -20,6 +20,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
+import utils.MyUtils;
+
 public class ScanFile {
 	static String kyoten;
 	static String targetPath;
@@ -40,7 +42,7 @@ public class ScanFile {
         dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
         
 		//fax detetion process
-		System.out.println("■ScanFile: scan: " + kyoten);
+		MyUtils.SystemLogPrint("■ScanFile: scan: " + kyoten);
     	DeleteFile delete = new DeleteFile();
 		delete.run(targetPath);
         for (;;) {
@@ -59,10 +61,9 @@ public class ScanFile {
                     fileName = fileName.substring(0, (fileName.length()-4));	//.拡張子外す
                     if (extension.equals("pdf") == true) {
                     	try {
-                    		System.out.println("  ファイル検出...: " + fileName);
+                    		MyUtils.SystemLogPrint("  ファイル検出...: " + fileName);
 							scanProcess(fileName);
 						} catch (Throwable e) {
-							// TODO 自動生成された catch ブロック
 							e.printStackTrace();
 						}
                     }
@@ -72,6 +73,10 @@ public class ScanFile {
         }
 	}
 	static void scanProcess(String fileName) throws Throwable {
+		//1
+		
+		//2
+		
 		//Excelオープン
     	try {
 	        // Excelファイルへアクセス(eclipse上でパスをしていないとプロジェクトパスになる)
@@ -101,7 +106,7 @@ public class ScanFile {
 		        if (fileName.equals(faxNo) == true) {
 		        	//if (flag == 1) {
 		        	if (flag.equals("1") == true) {
-		        		System.out.println("  FLAG: " + flag);
+		        		MyUtils.SystemLogPrint("  FLAG: " + flag);
 		        	}
  		        	break;
 		        }

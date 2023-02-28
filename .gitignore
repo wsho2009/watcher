@@ -3,4 +3,3 @@
 *.xlsx
 src/prop.properties
 data/ocr_watchdog.dat
-src/sample/*.java
