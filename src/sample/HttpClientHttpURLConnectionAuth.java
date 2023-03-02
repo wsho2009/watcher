@@ -29,7 +29,14 @@ public class HttpClientHttpURLConnectionAuth {
 
         HttpAuthenticator http_authenticator = new HttpAuthenticator(username, password);
         Authenticator.setDefault(http_authenticator);
-
+        /*
+        Authenticator.setDefault(new Authenticator() {
+			@Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password.toCharArray());
+            }
+        });
+        */
         HttpURLConnection urlconn = (HttpURLConnection)url.openConnection();
         urlconn.setRequestMethod("GET");
         urlconn.setInstanceFollowRedirects(false);
@@ -48,8 +55,8 @@ public class HttpClientHttpURLConnectionAuth {
         System.out.println
             ("レスポンスコード[" + urlconn.getResponseCode() + "] " +
              "レスポンスメッセージ[" + urlconn.getResponseMessage() + "]");
-        System.out.println
-            ("プロンプト(realm)[" + http_authenticator.myGetRequestingPrompt() + "]");
+        //System.out.println
+        //    ("プロンプト(realm)[" + http_authenticator.myGetRequestingPrompt() + "]");
         System.out.println("\n---- ボディ ----");
 
 

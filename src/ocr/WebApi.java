@@ -46,13 +46,14 @@ public class WebApi {
     static class FormData {
     	String userId;
     	String documentId;
+    	String docsetName;
     	String file;
     }
     FormData formData = new WebApi.FormData();	//for Upload
 	public String saveFile;	//for Download
     
     private static final String EOL = "\r\n";
-	//private static final String EOL = "\n";
+
     public WebApi() {
 	}
 
@@ -105,14 +106,14 @@ public class WebApi {
             final String boundary = UUID.randomUUID().toString();
             con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
             try (OutputStream out = con.getOutputStream()) {
-            	if (formData.userId != null) {
+            	if (this.formData.userId != null) {
                 out.write(("--" + boundary + EOL +
                         "Content-Disposition: form-data; name=\"userId\"" + EOL + 
                         formData.userId + EOL)
                         .getBytes(StandardCharsets.UTF_8)
-                    );
+                    );  //getBytes(Charset.forName("SJIS"));
             	}
-            	if (formData.documentId != null) {
+            	if (this.formData.documentId != null) {
                 out.write(("--" + boundary + EOL +
                         "Content-Disposition: form-data; name=\"documentId\"" + EOL + 
                         formData.documentId + EOL)
@@ -201,15 +202,13 @@ public class WebApi {
 	    this.responseJson = mapper.readTree(response.toString());
 	    this.responseStr = response.toString();
 	    
-        return responseCode;
-
+        return this.responseCode;
     }
 
 	public int download() throws IOException {
 		if (this.saveFile == null)
             return -1;
 		
-		int httpStatusCode = 0;
 		try {
 			URL obj = new URL(this.url);
 			HttpURLConnection con = null;
@@ -245,7 +244,7 @@ public class WebApi {
 			
 			// HTTP 応答メッセージから状態コードを取得します
 			this.responseCode = con.getResponseCode();
-			if (httpStatusCode != HttpURLConnection.HTTP_OK) {
+			if (this.responseCode != HttpURLConnection.HTTP_OK) {
 				throw new Exception();
 			}
 	        //レスポンスボディの読み出し
